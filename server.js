@@ -13,7 +13,9 @@ app.use(logger('dev'));
 app.use(bodyParser.urlencoded({
 	extended:false
 }));
-
+ 
+//make public a static dir
+app.use(express.static('public'));
 
 // set up handlebars default layout and view engine
 var exphbs = require('express-handlebars');
