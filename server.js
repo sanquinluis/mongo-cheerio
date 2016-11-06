@@ -23,3 +23,117 @@ app.engine('handlebars', exphbs({
     defaultLayout: 'main'
 }));
 app.set('view engine', 'handlebars');
+
+//Database configuration with mongoose
+mongoose.connect('mongodb://localhost/mongo-cheerio');
+var db = mongoose.connection;
+
+//showing any mongoose errors
+db.on('error', function(err){
+	console.log('mongoose Error', err)
+});
+
+// once logged in to the db through mongoose, log a success message
+db.once('open', function(){
+	console.log('Mongoose connection successful');
+
+});
+
+//ANd we bring in our Note and Article models
+var Note = require('./models/Note.js');
+var Article = require('./models/Article.js');
+
+//Routes
+//==========
+
+//Simple index route
+app.get('/',function(req, res){
+	res.render('home');
+});
+
+// A GET request to scrape the indeed website.
+app.post('fetch', function(req, res){
+	//first, we grab te body of the html with request
+	request('http://www.nytimes.com/', function(error, response, html){
+		//Then we load it into cheerio and save it to $ for a shorthand selector
+		var $ = cheerio.load(html);
+		//we grab an atribute within an atribute tag.
+		$('article.story.theme-summary').each(function(i, element){
+			//saving the result in an empty result object
+				var result = {};
+
+			//adding the link and text and saving them with the result var.
+				result.title = $(element).find('.story-heading').find('a').text();
+				result.summary = $(element).find('.p.summary').text();
+
+			//using a constructor model create a new entry with the Article.js model
+				 var entry = new Article(result);
+
+				 //saving the entry to the database
+				 entry.save(function(err, doc){
+				 	if(err){
+				 		console.log(err);
+				 	}else{
+				 		console.log(doc);
+				 	}
+				 })
+
+
+		})
+	});
+	//Scrap finished
+	res.send('Finished Scraping');
+
+});
+// getting articles we scraped from the mongoDB
+app.get('check',function(req, res){
+	//grab every article in the array
+	Article.find({}, function(err, doc){
+		//log any err
+		if(err){
+			console.log(err);
+		}
+		// or send the doc to the browser as a json object
+		else{
+			res.json(doc);
+		}
+	});
+});
+	//grab an article by it's ObjectId
+app.post('gather', function(req, res){
+	// using the id passed in the id parameter, 
+	// prepare a query that finds the matching one in our db...
+	Note.find({'id':req.body.id}, function(err, doc){
+		if(err){
+			console.log(err);
+
+		}else {
+			res.json(doc);
+		}
+
+	});
+});
+
+	//deleting the notes in the article
+app.delete('delete', function(req, res){
+	//find the id passed in the id parameter
+	//preparing the query to find the matches
+
+	Note.remove({'id':req.body.id})
+		.exec(function(err, doc){
+		if(err){
+				console.log(err);
+		} else{
+				res.json(doc);
+		}
+	});
+});
+
+var PORT = process.env.PORT || 3000;
+// listen on port 3000
+app.listen(PORT, function() {
+  console.log('App running on port 3000!');
+});
+
+
+
