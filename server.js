@@ -25,7 +25,9 @@ app.engine('handlebars', exphbs({
 app.set('view engine', 'handlebars');
 
 //Database configuration with mongoose
-mongoose.connect('mongodb://localhost/mongo-cheerio');
+// mongoose.connect('mongodb://localhost/mongo-cheerio');
+mongoose.connect("mongodb://heroku_hkpqmtx2:cbh582glsjv44mrdln7t8olbpu@ds151707.mlab.com:51707/heroku_hkpqmtx2")
+
 var db = mongoose.connection;
 
 //showing any mongoose errors
